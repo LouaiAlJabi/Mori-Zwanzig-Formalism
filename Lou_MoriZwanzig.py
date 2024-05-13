@@ -18,13 +18,15 @@ def main(sample_splits,seed,num_boots):
     
     args:
     sample_splits = number of sample splits, multiplication of 16
+    seed = the randomizing seed to get samples, use for deterministic values
+    num_boots = number of bootstraps to do
     """
     if sample_splits % 16 != 0:
-        raise ValueError("The number of samples must be a multiple of 16.")
+        raise ValueError("The number of sample splits must be a multiple of 16.")
 
 
-    part_mass, dt, KB, T, Omega,seed = VarSetter(80.,0.005,1.,1.,0,seed)
-    v,F,sq_displacement = LoadDatafile('velocities.npy','forces.npy','sq_displacement_stat.npy')
+    part_mass, dt, KB, T, Omega,seed = VarSetter(80.,0.005,1.,1.,0,seed) #include your own values
+    v,F,sq_displacement = LoadDatafile('velocities.npy','forces.npy','sq_displacement_stat.npy') #include your own files
     v_acf, F_acf, vF_cross = AutoCorrelationFunctions(v,F,sq_displacement)
     num_steps, num_sims, num_dimensions = v.shape
     steps_to_integrate = num_steps
@@ -42,7 +44,7 @@ def main(sample_splits,seed,num_boots):
     
     clear_output()
     
-    print("finished with multiprocessing, starting Einstein!")
+    print("finished with multiprocessing MZ, starting Einstein!")
     Einstein = []
     with cf.ThreadPoolExecutor() as exe:
         futures = [exe.submit(diffusion_constant_from_MSD,24., 28.,time,samples[i]) 
@@ -50,7 +52,7 @@ def main(sample_splits,seed,num_boots):
     
     for future in cf.as_completed(futures):
         Einstein.append(future.result())
-       
+        
     clear_output()
     return list_, Einstein
 
@@ -66,13 +68,19 @@ def LoadDatafile(velocity_file,force_file,sqd_file):
     
     return [v, F, sq_displacement]
 
-def AutoCorrelationFunctions(v,F):
-    # With multiprocessing
+def AutoCorrelationFunctions(velocity,Force):
+    """
+    This function calculates correlation functions using the provided velocities and forces
+
+    args:
+    velocity = the file of velocities
+    Froce = the file of forces
+    """
     start = tm.time()
     with cf.ProcessPoolExecutor() as exe:
-        future_vacf = exe.submit(mz.compute_correlation_functions, v,None,True,False,False)
-        future_Facf = exe.submit(mz.compute_correlation_functions, F,None,True,False,False)
-        future_vFcross = exe.submit(mz.compute_correlation_functions, v,F,True,False,False)
+        future_vacf = exe.submit(mz.compute_correlation_functions, velocity,None,True,False,False)
+        future_Facf = exe.submit(mz.compute_correlation_functions, Force,None,True,False,False)
+        future_vFcross = exe.submit(mz.compute_correlation_functions, velocity,Force,True,False,False)
     
         v_acf = future_vacf.result()
         F_acf = future_Facf.result()
