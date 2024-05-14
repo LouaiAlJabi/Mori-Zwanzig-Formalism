@@ -5,38 +5,47 @@ import time as tm
 from collections import defaultdict
 import concurrent.futures as cf
 from IPython.display import clear_output
-import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pandas as pd
 import pickle
 
 
 
-def main(sample_splits,seed,num_boots):
+def main(num_boots,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement):
     """
     A function that does the bootstrapping in parallel over 16 cores.
     
     args:
-    sample_splits = number of sample splits, multiplication of 16
+    num_boots = number of bootstraps to do, multiplication of 16. also acts as the number of sample splits
     seed = the randomizing seed to get samples, use for deterministic values
-    num_boots = number of bootstraps to do
+    particle_mass = mass of the big particle (the small particles have unit mass)
+    dt = delta time
+    seed = seed for rng
+    kB = constant Boltsman
+    T = temperature
+    Omega = Omega value
+    velocity = the file of velocities
+    Froce = the file of forces
+    sq_displacement = the file of squared displacement
     """
-    if sample_splits % 16 != 0:
+    if num_boots % 16 != 0:
         raise ValueError("The number of sample splits must be a multiple of 16.")
 
 
-    part_mass, dt, KB, T, Omega,seed = VarSetter(80.,0.005,1.,1.,0,seed) #include your own values
-    v,F,sq_displacement = LoadDatafile('velocities.npy','forces.npy','sq_displacement_stat.npy') #include your own files
-    v_acf, F_acf, vF_cross = AutoCorrelationFunctions(v,F,sq_displacement)
-    num_steps, num_sims, num_dimensions = v.shape
+    #Use the functions to set up the necessery data
+    
+    v_acf, F_acf, vF_cross = AutoCorrelationFunctions(velocity,force)
+    num_steps, num_sims, num_dimensions = velocity.shape
     steps_to_integrate = num_steps
     time = np.linspace(0, dt*num_steps, num_steps)
-    num_bootstraps = num_boots
+    #include your own range of cuttoffs
     cutoffs = np.arange(1,29.)
 
-    samples = GenSamples(sample_splits,num_sims,seed)
+    #generate and split the sample set
+    samples = GenSamples(num_boots,num_sims,seed)
     splits = EvenSplit(samples, 16)
     list_ = []
+    #With Concurrent futures, split the bootstrapping work to be distributed on 16 cores at a time (e.g. 2 jobs for a 32core computer), adjust accordinge to your device.
+    #Recommended not to use all your cores as that might cause the computer to crash
     with cf.ProcessPoolExecutor(16) as exe:
         futures = [exe.submit(Bootstrap, splits[i],cutoffs,v_acf,F_acf,vF_cross,part_mass,dt,KB,T,Omega,num_steps,time) for i in range(len(splits))]
         for future in cf.as_completed(futures):
@@ -47,8 +56,8 @@ def main(sample_splits,seed,num_boots):
     print("finished with multiprocessing MZ, starting Einstein!")
     Einstein = []
     with cf.ThreadPoolExecutor() as exe:
-        futures = [exe.submit(diffusion_constant_from_MSD,24., 28.,time,samples[i]) 
-                   for i in range(sample_splits)]
+        futures = [exe.submit(diffusion_constant_from_MSD,24., 28.,time,sq_displacement,samples[i]) 
+                   for i in range(num_boots)]
     
     for future in cf.as_completed(futures):
         Einstein.append(future.result())
@@ -57,9 +66,10 @@ def main(sample_splits,seed,num_boots):
     return list_, Einstein
 
 
-def VarSetter(part_mass, dt, KB, T, Omega,seed):
-
-    return [part_mass, dt, KB, T, Omega,seed]
+def VarSetter(part_mass, dt, KB, T, Omega):
+    if part_mass < 0:
+        raise ValueError("Mass can't be negative")
+    return [part_mass, dt, KB, T, Omega]
 
 def LoadDatafile(velocity_file,force_file,sqd_file):
     v = np.load(velocity_file)
@@ -95,6 +105,7 @@ def GenSamples(num,num_sims,seed):
     
     args:
     num = The resulting number of samples
+    num_sims = number of simulations, determined by the data provided
     seed = The seed for randomizing
     """
     np.random.seed(seed)
@@ -136,7 +147,15 @@ def diffusion_constant_from_MSD(start_fit_time, end_fit_time,time,sq_displacemen
     print("Finished")
     return dict_
 
-def Fixup(holder,ein):    
+def Fixup(holder,ein):
+    """
+    This functions takes in the two resulted dictionaries from the "main" function and fixes them to be presented in a single proper dictionary.
+    Very specific for this data.
+
+    args:
+    holder = the first resulted dictionary from "main" which houses all the results besides the Einstein method
+    ein = the second resulted dictionary from "main" that houses only the Einstein method
+    """    
     dict_ = defaultdict(list)
     for dic in holder:
         for key, value in dic.items():
@@ -182,7 +201,7 @@ def Fixup(holder,ein):
     return dict_df
 
 
-def Bootstrap(samples,cutoffs,v_acf,F_acf,vF_cross,particle_mass,dt,kB,T,Omega,num_steps,time): # samples is a list
+def Bootstrap(samples,cutoffs,v_acf,F_acf,vF_cross,particle_mass,dt,kB,T,Omega,num_steps,time): 
     """
     
     args:
@@ -265,10 +284,16 @@ def Bootstrap(samples,cutoffs,v_acf,F_acf,vF_cross,particle_mass,dt,kB,T,Omega,n
     
     return results
 
+def PickleResults(name):
+    with open(name,'wb') as file:
+        pickle.dump(result,file,protocol=pickle.HIGHEST_PROTOCOL)
 
-
+## Running the code
 if __name__ == '__main__':
     start = tm.time()
-    list_, Ein_list = main(16,1098340,1280) 
+    velocity,force,sq_displacement = LoadDatafile('velocities.npy','forces.npy','sq_displacement_stat.npy') #include your own files
+    part_mass, dt, KB, T, Omega = VarSetter(80.,0.005,1.,1.,0) 
+    list_, Ein_list = main(1280,1098340,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement) 
     result = Fixup(list_,Ein_list)
+    #PickleResults("Holder")
     print(' The bootstrapping finished in:\n',round(((tm.time()-start)/60 / 60),2) ,'hours')
