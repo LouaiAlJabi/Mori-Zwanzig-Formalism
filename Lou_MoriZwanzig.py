@@ -284,16 +284,6 @@ def Bootstrap(samples,cutoffs,v_acf,F_acf,vF_cross,particle_mass,dt,kB,T,Omega,n
     
     return results
 
-def PickleResults(name):
+def PickleResults(name,result):
     with open(name,'wb') as file:
         pickle.dump(result,file,protocol=pickle.HIGHEST_PROTOCOL)
-
-## Running the code
-if __name__ == '__main__':
-    start = tm.time()
-    velocity,force,sq_displacement = LoadDatafile('velocities.npy','forces.npy','sq_displacement_stat.npy') #include your own files
-    part_mass, dt, KB, T, Omega = VarSetter(80.,0.005,1.,1.,0) 
-    list_, Ein_list = main(1280,1098340,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement) 
-    result = Fixup(list_,Ein_list)
-    #PickleResults("Holder")
-    print(' The bootstrapping finished in:\n',round(((tm.time()-start)/60 / 60),2) ,'hours')
