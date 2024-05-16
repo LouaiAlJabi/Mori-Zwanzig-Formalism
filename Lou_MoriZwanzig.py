@@ -7,7 +7,7 @@ import concurrent.futures as cf
 from IPython.display import clear_output
 import pandas as pd
 import pickle
-
+import os
 
 def main(num_boots,cores,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement):
     """
@@ -15,6 +15,7 @@ def main(num_boots,cores,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_disp
     
     args:
     num_boots = number of bootstraps to do, multiplication of 16. also acts as the number of sample splits
+    cores = number of cores to multiprocess
     seed = the randomizing seed to get samples, use for deterministic values
     particle_mass = mass of the big particle (the small particles have unit mass)
     dt = delta time
@@ -26,7 +27,9 @@ def main(num_boots,cores,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_disp
     Froce = the file of forces
     sq_displacement = the file of squared displacement
     """
-
+    if cores > os.cpu_count:
+        raise ValueError("The number of cores requested exceeds your system's capabilities!")
+    
     #Use the functions to set up the necessery data
     print("doing autocorrelation")
     v_acf, F_acf, vF_cross = AutoCorrelationFunctions(velocity,force)
