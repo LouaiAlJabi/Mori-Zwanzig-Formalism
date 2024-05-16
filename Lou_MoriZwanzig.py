@@ -9,8 +9,7 @@ import pandas as pd
 import pickle
 
 
-
-def main(num_boots,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement):
+def main(num_boots,cores,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displacement):
     """
     A function that does the bootstrapping in parallel over 16 cores.
     
@@ -27,12 +26,9 @@ def main(num_boots,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displaceme
     Froce = the file of forces
     sq_displacement = the file of squared displacement
     """
-    if num_boots % 16 != 0:
-        raise ValueError("The number of sample splits must be a multiple of 16.")
-
 
     #Use the functions to set up the necessery data
-    
+    print("doing autocorrelation")
     v_acf, F_acf, vF_cross = AutoCorrelationFunctions(velocity,force)
     num_steps, num_sims, num_dimensions = velocity.shape
     steps_to_integrate = num_steps
@@ -40,13 +36,16 @@ def main(num_boots,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displaceme
     #include your own range of cuttoffs
     cutoffs = np.arange(1,29.)
 
+    print("Generating samples")
     #generate and split the sample set
     samples = GenSamples(num_boots,num_sims,seed)
-    splits = EvenSplit(samples, 16)
+    splits = list(EvenSplit(samples, cores))
+    
+    print("doing multiprocessing")
     list_ = []
     #With Concurrent futures, split the bootstrapping work to be distributed on 16 cores at a time (e.g. 2 jobs for a 32core computer), adjust accordinge to your device.
     #Recommended not to use all your cores as that might cause the computer to crash
-    with cf.ProcessPoolExecutor(16) as exe:
+    with cf.ProcessPoolExecutor(cores) as exe:
         futures = [exe.submit(Bootstrap, splits[i],cutoffs,v_acf,F_acf,vF_cross,part_mass,dt,KB,T,Omega,num_steps,time) for i in range(len(splits))]
         for future in cf.as_completed(futures):
             list_.append(future.result())
@@ -64,6 +63,7 @@ def main(num_boots,seed,part_mass, dt, KB, T, Omega,velocity,force,sq_displaceme
         
     clear_output()
     return list_, Einstein
+
 
 
 def VarSetter(part_mass, dt, KB, T, Omega):
@@ -114,6 +114,7 @@ def GenSamples(num,num_sims,seed):
     for _ in range(num):
         list_.append((_+1,list(np.random.choice(range(num_sims), size = num_sims, 
                                       replace = True))))
+    list_ = np.array(list_,dtype=object)
     return list_
 
 def EvenSplit(list_, chunk):
@@ -287,3 +288,14 @@ def Bootstrap(samples,cutoffs,v_acf,F_acf,vF_cross,particle_mass,dt,kB,T,Omega,n
 def PickleResults(name,result):
     with open(name,'wb') as file:
         pickle.dump(result,file,protocol=pickle.HIGHEST_PROTOCOL)
+
+if __name__ == '__main__':
+    start = tm.time()
+    print("started")
+    velocity, force, sq_displacement = LoadDatafile("velocities.npy", "forces.npy", "sq_displacement_stat.npy")
+    part_mass, dt,KB,T,Omega = VarSetter(80.,0.005,1.,1.,0)
+    print("mp started")
+    list_, Ein_list = main(16,4,1,part_mass,dt,KB,T,Omega,velocity,force,sq_displacement) 
+    result = Fixup(list_,Ein_list)
+    PickleResults("NewResultTest",result)
+    print(' The bootstrapping finished in:\n',round(((tm.time()-start)/60 / 60),2) ,'hours')
