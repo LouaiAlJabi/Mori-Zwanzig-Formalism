@@ -104,7 +104,7 @@ def AutoCorrelationFunctions(velocity,Force):
     
 def GenSamples(num,num_sims,seed):
     """
-    Generates a 'num' amount of samples and returns the results as a list of all the samples.
+    Generates a 'num' amount of samples and renum_simsturns the results as a list of all the samples.
     
     args:
     num = The resulting number of samples

@@ -27,12 +27,18 @@ def GenSamples(num,num_sims,seed):
     list_ = np.array(list_,dtype=object)
     return list_
 
+
+
+
+
 def UserFunction(dataSet):
     return np.square(dataSet)
 
-def Bootstrap(dataSet,function,num_boots,sample):
+def Bootstrap(dataSet,function,num_boots,sampledAxis=None):
     baseResult = function(dataSet)
     finalResult = tuple()
+    sample = np.random.choice(range(baseResult))
+
     
     #for iboot in num_boots:
         
@@ -43,4 +49,8 @@ baseResult = UserFunction(dataSet)
 baseResult.shape
 
 #Bootstrap(dataSet,UserFunction)
-print(GenSamples(16,99,1).shape)
+list_ = []
+for _ in range(16):
+    list_.append((_+1,list(np.random.choice(range(99), size = 99, 
+                                    replace = True))))
+print(type(list_[0][1]))
