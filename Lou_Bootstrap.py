@@ -3,9 +3,7 @@ import time as tm
 from collections import defaultdict
 import concurrent.futures as cf
 from IPython.display import clear_output
-import pandas as pd
-import pickle
-import os
+
 
 dataSet = np.array([np.random.rand(25),np.random.rand(25)])
 dataStuff = np.random.rand(25)
