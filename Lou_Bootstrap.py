@@ -58,7 +58,7 @@ def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = li
         dataSet (numpy array): an iterable data structure. Defaults to np.array.
         num_boots (int): number of bootstraps. Defaults to int.
         samplePortion (list): a list representing a single chunk of the generated samples. Defaults to list.
-        multipleDim (bool, optional): A bool indicating weather the data structure is of a multiple dimensions. Defaults to True.
+        multipleDim (bool, optional): A bool indicating weather the data structure is of multiple dimensions. Defaults to True.
         sampledAxis (int, optional): The axis the user desires to sample accros. Defaults to None (0).
 
     Returns:
@@ -79,16 +79,6 @@ def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = li
         for iboot in range(boots):
             bootResults["Results:"][iboot] = userFunction(np.take(dataSet,samplePortion[iboot]),*args)
 
-    #the user gives a function with dataset (iterable)
-    #the user gives the number of bootstraps they want
-    #the user gives a desired axis
-    #the user gives the desired confidence interval
-    
-    #the function takes in a sample portion 
-    #the function creates a temp holder of boot
-    #the function runs the function with the dataset once
-    #the function bootstraps along the desired axis
-    #the function returns the output as a list of three elements: function result on whole data, lower and upper confidence bound
     return bootResults
     
 
