@@ -14,9 +14,9 @@ def GenSamples(num,num_sims,seed):
     """
     Generates a 'num' amount of samples and renum_simsturns the results as a list of all the samples.
     Args:
-        num (_type_): The resulting number of samples
-        num_sims (_type_): number of simulations, determined by the data provided
-        seed (_type_): The seed for randomizing
+        num (int): The resulting number of samples
+        num_sims (int): number of simulations, determined by the data provided
+        seed (int): The seed for randomizing
 
     Returns:
         list: a list of lists, each containing a sample portion
@@ -34,7 +34,7 @@ def EvenSplit(list_, chunk):
     The Function takes in a list of even length and splits it into an even number of chunks.
     Args:
         list_ (list): The list to split
-        chunk (_type_): The number of chunks to split into
+        chunk (int): The number of chunks to split into
 
     Raises:
         ValueError: "The list can't be split evenly into an even number. Check its length and the requested chunk size, both should be even."
