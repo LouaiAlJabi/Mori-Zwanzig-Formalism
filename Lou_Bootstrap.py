@@ -10,6 +10,8 @@ dataStuff = np.random.rand(25)
 def UserFunction(dataSet):
     return np.mean(dataSet)
 
+
+
 def GenSamples(num,num_sims,seed):
     """
     Generates a 'num' amount of samples and renum_simsturns the results as a list of all the samples.
@@ -145,5 +147,7 @@ def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int,mult
     return finalResults
 
 
-x = main(UserFunction,dataSet,4000,1,4,True,None,0.95)
+
+
+x = main(UserFunction,dataSet,4000,1,4,True,None,0.95,)
 print(x)
