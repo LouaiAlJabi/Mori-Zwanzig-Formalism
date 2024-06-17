@@ -149,5 +149,5 @@ def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int, sam
 
 
 
-x = main(UserFunction,dataSet,4000,1,4,None,0.95,)
-print(x)
+#x = main(UserFunction,dataSet,4000,1,4,None,0.95,)
+#print(x)
