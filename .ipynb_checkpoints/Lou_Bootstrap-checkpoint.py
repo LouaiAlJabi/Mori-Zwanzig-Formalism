@@ -5,8 +5,8 @@ import concurrent.futures as cf
 from IPython.display import clear_output
 
 
-#dataSet = np.array([np.random.rand(25),np.random.rand(25)])
-#dataStuff = np.random.rand(25)
+dataSet = np.array([np.random.rand(25),np.random.rand(25)])
+dataStuff = np.random.rand(25)
 def UserFunction(dataSet):
     return np.mean(dataSet)
 
