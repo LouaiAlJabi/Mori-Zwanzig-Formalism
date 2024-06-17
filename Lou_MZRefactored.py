@@ -71,6 +71,10 @@ def LoadDatafile(velocity_file,force_file,sqd_file):
     sq_displacement = np.load(sqd_file)
 
 #set variables
+def VarSetter(part_mass, dt, KB, T, Omega):
+    if part_mass < 0:
+        raise ValueError("Mass can't be negative")
+    return [part_mass, dt, KB, T, Omega]
 
 #Calc Diff with Einstein
 def diffusion_constant_from_MSD(start_fit_time, end_fit_time,time,sq_displacement, sample): #24.,28.

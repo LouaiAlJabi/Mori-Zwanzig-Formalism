@@ -51,7 +51,7 @@ def EvenSplit(list_, chunk):
         raise ValueError("The list can't be split evenly into an even number." 
                          + " Check its length and the requested chunk size, both should be even.")
 
-def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = list,multipleDim = True, sampledAxis=None,*args):
+def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = list, sampledAxis=None,*args):
     """
     This function takes in a Function and a dataset and does bootstrapping on it
 
@@ -67,11 +67,11 @@ def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = li
         Dictionary: contains the results of bootstrap(s)
     """
     boots = len(samplePortion)
-    if (not multipleDim):
+    if (not dataSet.ndim > 1):
         sampledAxis = 0
 
     bootResults = {}
-    if (multipleDim):
+    if (dataSet.ndim > 1):
         for iboot in range(boots):
             bootResults["Results " + str(iboot + 1) + ":"] = []
             bootResults[list(bootResults.keys())[iboot]] = np.apply_along_axis(userFunction,sampledAxis,
@@ -84,7 +84,7 @@ def Bootstrap(userFunction,dataSet = np.array,num_boots = int,samplePortion = li
     return bootResults
     
 
-def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int,multipleDim = True, sampledAxis=None,confInt=None,*args):
+def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int, sampledAxis=None,confInt=None,*args):
     """
     The function uses multiprocessing to bootstrap.
 
@@ -104,7 +104,7 @@ def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int,mult
     np.random.seed(seed)
     finalResults = [[],[]]
     
-    if (multipleDim):
+    if (dataSet.ndim > 1):
         if (sampledAxis):
             num_sims = dataSet.shape[sampledAxis]
         else:
@@ -124,12 +124,12 @@ def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int,mult
     
     list_ = []
     with cf.ProcessPoolExecutor(cores) as exe:
-        futures = [exe.submit(Bootstrap,userFunction,dataSet,boots,splits[i],multipleDim, sampledAxis,*args) 
+        futures = [exe.submit(Bootstrap,userFunction,dataSet,boots,splits[i], sampledAxis,*args) 
                    for i in range(len(splits))]
         for future in cf.as_completed(futures):
             list_.append(future.result())
 
-    if (multipleDim):
+    if (dataSet.ndim > 1):
         multResults = []
         for i in list_:
             for j in range(len(i)):
@@ -149,5 +149,5 @@ def main(userFunction,dataSet = np.array,boots = int,seed = int,cores = int,mult
 
 
 
-x = main(UserFunction,dataSet,4000,1,4,True,None,0.95,)
+x = main(UserFunction,dataSet,4000,1,4,None,0.95,)
 print(x)
